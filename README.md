@@ -41,7 +41,7 @@ nobi-dl --version
 Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/nobi-dl.git
+git clone https://github.com/0xvd/nobi-dl.git
 cd nobi-dl
 ```
 
@@ -131,23 +131,6 @@ nobi-dl -j "The Godfather" > movie.json
 
 - Linux
 - Windows
-- macOS
-
-## Project Structure
-
-```
-nobi-dl/
-├── nobi_dl/
-│   ├── __init__.py
-│   ├── cli.py
-│   ├── downloader.py
-│   ├── extractors/
-│   └── utils.py
-├── tests/
-├── setup.py
-├── README.md
-└── LICENSE
-```
 
 ## Contributing
 

@@ -3,7 +3,7 @@ import urllib.parse
 import urllib.error
 import socket
 import http.client
-
+from ._response import HttpResponse
 
 class UrllibRH:
     def __init__(
@@ -88,9 +88,6 @@ class UrllibRH:
                 body = self.data.encode("utf-8")
             elif isinstance(self.data, dict):
                 body = urllib.parse.urlencode(self.data, doseq=True).encode("utf-8")
-                default_headers.setdefault(
-                    "Content-Type", "application/x-www-form-urlencoded"
-                )
             else:
                 body = str(self.data).encode("utf-8")
 
@@ -110,7 +107,12 @@ class UrllibRH:
                     last_err = RuntimeError(f"HTTP {code}")
                     continue
 
-                return resp
+                if self.stream:
+                    return HttpResponse(resp, b"")
+
+                data = resp.read()
+                resp.close()
+                return HttpResponse(resp, data)
 
             except urllib.error.HTTPError as e:
                 if e.code in (429, 503, 502, 504):

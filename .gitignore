@@ -8,3 +8,7 @@ build/
 
 .venv/
 venv/
+
+*.mkv
+*.mp4
+*.part
