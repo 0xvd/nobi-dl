@@ -1,0 +1,31 @@
+name: Bug report
+description: Report a broken extractor, download issue, or crash
+labels: ["bug"]
+body:
+  - type: input
+    attributes:
+      label: nobi-dl version
+      placeholder: nobi-dl 2026.1.24
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Command used
+      placeholder: nobi-dl URL -vv
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Debug log
+      description: Run with -vv and paste output
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true

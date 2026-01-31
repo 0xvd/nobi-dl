@@ -1,0 +1,11 @@
+name: Feature request
+description: Suggest a new extractor or feature
+labels: ["enhancement"]
+body:
+  - type: textarea
+    attributes:
+      label: What do you want to add?
+    validations:
+      required: true
+
+  

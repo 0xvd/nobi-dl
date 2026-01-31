@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nobi-dl"
+version = "2026.1.24"
+description = "A scraping-based movie downloader. No own database; sources are scraped from the web."
+readme = { file = "README.md", content-type = "text/markdown" }
+requires-python = ">=3.10"
+license = 'MIT'
+
+authors = [
+    { name = "0xvd", email = "0xvd12@gmail.com" }
+]
+
+dependencies = [
+    "requests>=2.25"
+]
+
+[project.scripts]
+nobi-dl = "nobi_dl.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/0xvd/nobi-dl"
+Source = "https://github.com/0xvd/nobi-dl"
+Issues = "https://github.com/0xvd/nobi-dl/issues"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[project.optional-dependencies]
+curl = ["curl-cffi>=0.7"]
+fuzzy = ["rapidfuzz>=3.0"]
+dev = ["build", "twine"]
