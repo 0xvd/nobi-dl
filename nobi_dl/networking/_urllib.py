@@ -56,10 +56,18 @@ class UrllibRH:
         return urllib.parse.urlunsplit(parts)
 
     @property
-    def update_cookies_in_headers(self, cookies):
+    def update_cookies_in_headers(self):
         if not self.cookies:
             return {}
-        return self.cookies
+
+        if isinstance(self.cookies, dict):
+            cookie_header = "; ".join(f"{k}={v}" for k, v in self.cookies.items())
+        else:
+            cookie_header = str(self.cookies)
+
+        return {
+            "Cookie": cookie_header
+        }
 
     def _request(self):
         from ._request_handler import std_headers
