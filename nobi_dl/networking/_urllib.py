@@ -1,9 +1,52 @@
+import json
 import urllib.request
 import urllib.parse
 import urllib.error
 import socket
 import http.client
-from ._response import HttpResponse
+
+
+class HttpResponse:
+    def __init__(self, resp, body: bytes):
+        self._resp = resp
+        self._body = body
+        self._headers = dict(resp.headers)
+
+    @property
+    def content(self):
+        return self._body
+
+    @property
+    def text(self):
+        return self._body.decode("utf-8", errors="ignore")
+
+    def json(self):
+        return json.loads(self.text)
+    
+    def iter_content(self, chunk_size=8192):
+        if self._body:
+            for i in range(0, len(self._body), chunk_size):
+                yield self._body[i:i + chunk_size]
+            return
+
+        while True:
+            chunk = self._resp.read(chunk_size)
+            if not chunk:
+                break
+            yield chunk
+
+    @property
+    def url(self):
+        return getattr(self._resp, "url", None)
+
+    @property
+    def status_code(self):
+        return getattr(self._resp, "status", None) or self._resp.getcode()
+
+    @property
+    def headers(self):
+        return self._headers
+
 
 class UrllibRH:
     def __init__(

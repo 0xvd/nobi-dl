@@ -66,7 +66,7 @@ class VegaMoviesME(ExtractorBase):
             )
             results.extend(self._parse_content(page))
             next_page = _search_regex(r"<a[^>]+list_submit[^>]+>(\d+)<\/a>", page)
-            if not next_page or results >= limit:
+            if not next_page or len(results) >= limit:
                 break
 
         return results

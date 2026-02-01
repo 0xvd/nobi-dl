@@ -202,7 +202,7 @@ class NobiDL:
 
         return info
 
-    def _real_extract(self, url=None, **kwargs):
+    def _real_extract(self, url=None):
         if self.list_impersonate:
             return self.list_impersonate_targets()
 
@@ -213,15 +213,30 @@ class NobiDL:
             self.opt_error("No url or search query provided")
             return
 
-        if q := self.opts.search:
-            result = self.searcher.search(q)
-            if best := result["best"]:
-                url = best.get("url")
+        url = None
+        q = None
+
+        if self.opts.search:
+            q = self.opts.search
+
+        elif self.args:
+            arg = self.args[0]
+            if arg.startswith(("http://", "https://")):
+                url = arg
             else:
+                q = arg
+
+        if q:
+            result = self.searcher.search(q)
+            best = result.get("best")
+            if not best:
                 self.to_screen(f"[info] No Result found for {q}")
                 return
-        else:
-            url = self.args[0]
+            url = best.get("url")
+
+        if not url:
+            self.to_screen("[error] No URL provided")
+            return
 
         ie = ExtractorBase.get_extractor(self, url)
         if not ie:

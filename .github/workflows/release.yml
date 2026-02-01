@@ -37,7 +37,6 @@ jobs:
           pyinstaller -F nobi_dl/__main__.py -n nobi-dl
 
       - name: Upload binaries to GitHub Release
-        if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
           files: |
