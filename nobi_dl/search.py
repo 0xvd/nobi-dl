@@ -11,18 +11,18 @@ class Searcher(ExtractorBase):
         searchers = []
 
         for extractor in self.gen_extractors(self.md):
-            if not hasattr(extractor, "_real_search"):
+            if not hasattr(extractor, '_real_search'):
                 continue
 
-            ie_name = getattr(extractor, "_IE_NAME", None)
+            ie_name = getattr(extractor, '_IE_NAME', None)
             if not ie_name:
                 continue
 
             searchers.append(
                 {
-                    "ie": extractor,
-                    "name": ie_name,
-                }
+                    'ie': extractor,
+                    'name': ie_name,
+                },
             )
 
         return searchers
@@ -32,19 +32,19 @@ class Searcher(ExtractorBase):
 
         if not raw_result:
             return {
-                "query": query,
-                "total": 0,
-                "best": None,
-                "results": [],
+                'query': query,
+                'total': 0,
+                'best': None,
+                'results': [],
             }
 
         ranked = self._rank_results(raw_result, query)
 
         return {
-            "query": query,
-            "total": len(ranked),
-            "best": ranked[0] if ranked else None,
-            "results": ranked,
+            'query': query,
+            'total': len(ranked),
+            'best': ranked[0] if ranked else None,
+            'results': ranked,
         }
 
     def _rank_results(self, results, query):
@@ -52,15 +52,15 @@ class Searcher(ExtractorBase):
 
         def score(r):
             s = 0
-            title = r.get("title", "").lower()
+            title = r.get('title', '').lower()
 
             if q in title:
                 s += 50
 
-            quality = r.get("quality") or []
-            if "1080p" in quality:
+            quality = r.get('quality') or []
+            if '1080p' in quality:
                 s += 20
-            if "2160p" in quality:
+            if '2160p' in quality:
                 s += 30
 
             return s
@@ -74,26 +74,26 @@ class Searcher(ExtractorBase):
             searchers = [
                 s
                 for s in searchers
-                if self.force_extractor.lower() in s["ie"].__class__.__name__.lower()
-                or self.force_extractor.lower() in s["name"].lower()
+                if self.force_extractor.lower() in s['ie'].__class__.__name__.lower()
+                or self.force_extractor.lower() in s['name'].lower()
             ]
 
             if not searchers:
                 self.show_warning(
                     "The extractor doesn't support search or is not implemented yet. "
-                    "Try --list-extractors"
+                    "Try --list-extractors",
                 )
                 return []
 
         results = []
 
         for s in searchers:
-            ie = s["ie"]
+            ie = s['ie']
 
-            if getattr(ie, "_SEARCH", True) is False:
+            if getattr(ie, '_SEARCH', True) is False:
                 self.show_warning(f"skipping {s['name']} (search disabled)")
                 continue
-            self.logger.set_ie(ie, "search")
+            self.logger.set_ie(ie, 'search')
             try:
                 res = ie._real_search(query)
                 if res:

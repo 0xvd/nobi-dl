@@ -6,6 +6,7 @@ import random
 import re
 import sys
 import urllib.parse
+from contextlib import suppress
 from html import unescape
 
 from .version import REPOSITORY
@@ -44,100 +45,101 @@ KNOWN_RESOLUTIONS = {
 }
 
 JUNK_C = re.compile(
-    r"(?i)\b("
-    r"blu ?ray|brrip|hdrip|webrip|web[- ]dl|hdtv|x264|x265|hevc|aac|ddp?5\.?1|atmos|"
-    r"org|nf|proper|repack|uncut|full movie|movie|"
-    r"hindi|english|bengali|tamil|telugu|dual audio|"
-    r"mp4|mkv|"
-    r"\d{3,4}p|\d{3,4}x\d{3,4}|4k|8k|"
-    r"\d+(?:\.\d+)?\s?(?:gb|mb|mib)|\d+k|"
-    r"note|use|download|manager|instant|direct|"
-    r"idm|adm|g\s?direct|like|or|for|g|g-direct"
-    r")\b"
+    r'(?i)\b('
+    r'blu ?ray|brrip|hdrip|webrip|web[- ]dl|hdtv|x264|x265|hevc|aac|ddp?5\.?1|atmos|'
+    r'org|nf|proper|repack|uncut|full movie|movie|'
+    r'hindi|english|bengali|tamil|telugu|dual audio|'
+    r'mp4|mkv|'
+    r'\d{3,4}p|\d{3,4}x\d{3,4}|4k|8k|'
+    r'\d+(?:\.\d+)?\s?(?:gb|mb|mib)|\d+k|'
+    r'note|use|download|manager|instant|direct|'
+    r'idm|adm|g\s?direct|like|or|for|g|g-direct'
+    r')\b',
 )
 
-YEAR_C = re.compile(r"\b(19\d{2}|20\d{2})\b")
+YEAR_C = re.compile(r'\b(19\d{2}|20\d{2})\b')
 
 SERIES_URL_PAT = re.compile(
-    r"/(season-\d+|s\d+e\d+|episode-\d+|ep-?\d+|all-episodes)\b", re.I
+    r'/(season-\d+|s\d+e\d+|episode-\d+|ep-?\d+|all-episodes)\b', re.I,
 )
 STRONG_SERIES = re.compile(
-    r"\b(s\d+\s*e\d+|season\s*\d+|episode\s*\d+|all\s+episodes|web\s*series)\b", re.I
+    r'\b(s\d+\s*e\d+|season\s*\d+|episode\s*\d+|all\s+episodes|web\s*series)\b', re.I,
 )
-MOVIE_HINTS = re.compile(r"\b(full\s*movie|bluray|brrip|hdrip|webrip|dvdrip)\b", re.I)
+MOVIE_HINTS = re.compile(
+    r'\b(full\s*movie|bluray|brrip|hdrip|webrip|dvdrip)\b', re.I)
 
 _UNITS = {
-    "b": 1,
-    "kb": 10**3,
-    "mb": 10**6,
-    "gb": 10**9,
-    "tb": 10**12,
-    "pb": 10**15,
-    "kib": 2**10,
-    "mib": 2**20,
-    "gib": 2**30,
-    "tib": 2**40,
-    "pib": 2**50,
+    'b': 1,
+    'kb': 10**3,
+    'mb': 10**6,
+    'gb': 10**9,
+    'tb': 10**12,
+    'pb': 10**15,
+    'kib': 2**10,
+    'mib': 2**20,
+    'gib': 2**30,
+    'tib': 2**40,
+    'pib': 2**50,
 }
 
 SIZE_RE = re.compile(
-    r"(?i)\b(?:size|filesize)\s*[:=]\s*([\d.,]+)\s*(b|kb|mb|gb|tb|pb|kib|mib|gib|tib|pib)\b"
+    r'(?i)\b(?:size|filesize)\s*[:=]\s*([\d.,]+)\s*(b|kb|mb|gb|tb|pb|kib|mib|gib|tib|pib)\b',
 )
 INLINE_SIZE_RE = re.compile(
-    r"(?i)(?<![a-z0-9.-])\b([\d.]{1,6})\s*(gb|mb|kb|tb|pb|gib|mib|kib|tib|pib)\b"
+    r'(?i)(?<![a-z0-9.-])\b([\d.]{1,6})\s*(gb|mb|kb|tb|pb|gib|mib|kib|tib|pib)\b',
 )
 BADGE_SIZE_RE = re.compile(
-    r'(?i)<span[^>]*class="[^"]*badge-size[^"]*"[^>]*>\s*([\d.,]+)\s*(b|kb|mb|gb|tb|pb|kib|mib|gib|tib|pib)\s*</span>'
+    r'(?i)<span[^>]*class="[^"]*badge-size[^"]*"[^>]*>\s*([\d.,]+)\s*(b|kb|mb|gb|tb|pb|kib|mib|gib|tib|pib)\s*</span>',
 )
-CONTENT_LEN_RE = re.compile(r"(?i)\bcontent-length\s*[:=]\s*(\d+)\b")
+CONTENT_LEN_RE = re.compile(r'(?i)\bcontent-length\s*[:=]\s*(\d+)\b')
 
 KNOWN_EXTENSIONS = {
-    "mp4",
-    "mkv",
-    "mov",
-    "webm",
-    "flv",
-    "avi",
-    "m4v",
-    "ogv",
-    "mpg",
-    "mpeg",
-    "m3u8",
-    "ts",
+    'mp4',
+    'mkv',
+    'mov',
+    'webm',
+    'flv',
+    'avi',
+    'm4v',
+    'ogv',
+    'mpg',
+    'mpeg',
+    'm3u8',
+    'ts',
 }
 
 
 def _parse_resolution(webpage_or_url: str):
-    q = _search_regex(r"\b(\d{3,4})p\b", webpage_or_url, default=None)
+    q = _search_regex(r'\b(\d{3,4})p\b', webpage_or_url, default=None)
     if q:
         h = int(q)
         w = KNOWN_RESOLUTIONS.get(h)
-        return {"height": h, "width": w} if w else {}
+        return {'height': h, 'width': w} if w else {}
 
     q = _search_regex(
-        r"(?is)<title[^>]*>.*?\b(\d{3,4})p\b", webpage_or_url, default=None
+        r'(?is)<title[^>]*>.*?\b(\d{3,4})p\b', webpage_or_url, default=None,
     )
     if q:
         h = int(q)
         w = KNOWN_RESOLUTIONS.get(h)
-        return {"height": h, "width": w} if w else {}
+        return {'height': h, 'width': w} if w else {}
 
-    q = re.search(r"\b(\d{3,4})\s*[xX]\s*(\d{3,4})\b", webpage_or_url or "")
+    q = re.search(r'\b(\d{3,4})\s*[xX]\s*(\d{3,4})\b', webpage_or_url or '')
     if not q:
         return {}
 
     a, b = int(q.group(1)), int(q.group(2))
     if a in KNOWN_RESOLUTIONS and KNOWN_RESOLUTIONS[a] == b:
-        return {"height": a, "width": b}
+        return {'height': a, 'width': b}
     if b in KNOWN_RESOLUTIONS and KNOWN_RESOLUTIONS[b] == a:
-        return {"height": b, "width": a}
+        return {'height': b, 'width': a}
     return {}
 
 
 def b64d(s: str) -> str:
     s = s.strip()
-    s += "=" * (-len(s) % 4)
-    return base64.b64decode(s).decode("utf-8", errors="replace")
+    s += '=' * (-len(s) % 4)
+    return base64.b64decode(s).decode('utf-8', errors='replace')
 
 
 def rot_letters(s: str, shift: int = 13) -> str:
@@ -149,7 +151,7 @@ def rot_letters(s: str, shift: int = 13) -> str:
             return chr((o - 97 + shift) % 26 + 97)
         return c
 
-    return re.sub(r"[A-Za-z]", lambda m: _rot(m.group(0)), s)
+    return re.sub(r'[A-Za-z]', lambda m: _rot(m.group(0)), s)
 
 
 def decode_o(o_value: str, shift: int = 13) -> dict:
@@ -164,7 +166,7 @@ def shifter(o_value: str):
     for sh in range(1, 26):
         try:
             data = decode_o(o_value, shift=sh)
-            if isinstance(data, dict) and data.get("o"):
+            if isinstance(data, dict) and data.get('o'):
                 return data
         except Exception:
             pass
@@ -172,13 +174,12 @@ def shifter(o_value: str):
 
 
 def clean_url(url):
-    if "http" not in url:
-        url = f"https://{url}"
+    if 'http' not in url:
+        url = f'https://{url}'
     parts = urllib.parse.urlsplit(url)
     if not parts.scheme and not parts.netloc:
         return None
-    full_url = f"https://{parts.netloc}"
-    return full_url
+    return f'https://{parts.netloc}'
 
 
 def _search_regex(pattern, string, flags=0, group=None, default=DEFAULT):
@@ -206,15 +207,15 @@ def _search_regex(pattern, string, flags=0, group=None, default=DEFAULT):
 
 
 def movie_keys(title: str) -> tuple[str, str]:
-    t = (title or "").lower()
+    t = (title or '').lower()
     y = YEAR_C.search(t)
-    year = y.group(1) if y else ""
+    year = y.group(1) if y else ''
     if year:
-        t = t.replace(year, " ")
-    t = JUNK_C.sub(" ", t)
-    t = re.sub(r"[\[\]\(\)\|:]", " ", t)
-    t = re.sub(r"[^a-z0-9]+", " ", t)
-    t = re.sub(r"\s+", " ", t).strip()
+        t = t.replace(year, ' ')
+    t = JUNK_C.sub(' ', t)
+    t = re.sub(r'[\[\]\(\)\|:]', ' ', t)
+    t = re.sub(r'[^a-z0-9]+', ' ', t)
+    t = re.sub(r'\s+', ' ', t).strip()
 
     return t, year
 
@@ -222,31 +223,30 @@ def movie_keys(title: str) -> tuple[str, str]:
 def norm_title(s: str, only_lower=False) -> str:
     if only_lower is True:
         return s.lower()
-    s = (s or "").lower()
-    s = s.replace("’", "'")
-    s = re.sub(r"'s\b", "", s)
-    s = re.sub(r"[^a-z0-9]+", " ", s)
-    s = re.sub(r"\s+", " ", s).strip()
-    return s
+    s = (s or '').lower()
+    s = s.replace('’', "'")
+    s = re.sub(r"'s\b", '', s)
+    s = re.sub(r'[^a-z0-9]+', ' ', s)
+    return re.sub(r'\s+', ' ', s).strip()
 
 
 def _parse_a_tags(html):
-    return re.findall(r"<a[\s\S]+?<\/a>", html)
+    return re.findall(r'<a.+href[\s\S]+?<\/a>', html)
 
 
 def token_set_ratio(a: str, b: str) -> int:
     if fuzz:
         return int(fuzz.token_set_ratio(a, b))
 
-    sa = " ".join(sorted(set((a or "").lower().split())))
-    sb = " ".join(sorted(set((b or "").lower().split())))
+    sa = ' '.join(sorted(set((a or '').lower().split())))
+    sb = ' '.join(sorted(set((b or '').lower().split())))
     return int(difflib.SequenceMatcher(None, sa, sb).ratio() * 100)
 
 
 def _remove_duplicate(data: list, threshold=90):
     kept, keys = [], []
     for d in data:
-        k, year = movie_keys(d.get("title", ""))
+        k, year = movie_keys(d.get('title', ''))
 
         def is_dup(prev):
             pk, py = prev
@@ -269,28 +269,28 @@ def _parse_a_tag(s):
 
     href = unescape(m_href.group(1))
 
-    inner = re.sub(r"<\s*/?\s*a[^>]*>", "", s, flags=re.I)
-    inner = re.sub(r"<[^>]+>", " ", inner)
-    text = " ".join(inner.split())
+    inner = re.sub(r'<\s*/?\s*a[^>]*>', '', s, flags=re.I)
+    inner = re.sub(r'<[^>]+>', ' ', inner)
+    text = ' '.join(inner.split())
 
     return href, text
 
 
 def _og_title(html):
-    title = _search_regex(r"<title\s*>([^<]+)<", html, default=None)
+    title = _search_regex(r'<title\s*>([^<]+)<', html, default=None)
     if not title:
         title = _search_regex(r'<meta.+title".+content\s*=\s*"([^"]+)"', html)
-    title = (title or "").strip()
-    return title
+    return (title or '').strip()
 
 
 def _get_qparam(
-    url: str, keys: str | set[str] | list[str] | tuple[str, ...]
+    url: str, keys: str | set[str] | list[str] | tuple[str, ...],
 ) -> str | None:
     if isinstance(keys, str):
         keys = (keys,)
 
-    q = urllib.parse.parse_qs(urllib.parse.urlparse(url).query, keep_blank_values=False)
+    q = urllib.parse.parse_qs(urllib.parse.urlparse(
+        url).query, keep_blank_values=False)
     for key in keys:
         vals = q.get(key)
         if not vals:
@@ -302,15 +302,15 @@ def _get_qparam(
 
 
 def get_tld(url_or_host: str) -> str | None:
-    if "://" not in url_or_host:
-        url_or_host = "http://" + url_or_host
+    if '://' not in url_or_host:
+        url_or_host = 'http://' + url_or_host
 
     host = urllib.parse.urlparse(url_or_host).hostname
-    if not host or "." not in host:
+    if not host or '.' not in host:
         return None
 
-    parts = host.split(".")
-    return "." + parts[-1]
+    parts = host.split('.')
+    return '.' + parts[-1]
 
 
 def check_both_host_are_same(url: str, new_domain: str) -> str:
@@ -322,14 +322,15 @@ def check_both_host_are_same(url: str, new_domain: str) -> str:
 
 
 def _og_thumbnail(html):
-    thumbnail = _search_regex(r'<meta.+image".+content\s*=\s*"(https?[^"]+)"', html)
+    thumbnail = _search_regex(
+        r'<meta.+image".+content\s*=\s*"(https?[^"]+)"', html)
     if not thumbnail:
         thumbnail = _search_regex(r'thumbnail[^"]+"\s*:\s*"(http[^"]+)', html)
     return thumbnail
 
 
 def _parse_m3u8_resolution(stream_inf_line: str):
-    m = re.search(r"RESOLUTION=(\d+)x(\d+)", stream_inf_line)
+    m = re.search(r'RESOLUTION=(\d+)x(\d+)', stream_inf_line)
     if not m:
         return None, None
     return int(m.group(1)), int(m.group(2))
@@ -351,31 +352,31 @@ def _search_json(pattern, string, default=DEFAULT):
 
 
 def has_episode_structure(html: str) -> bool:
-    return len(re.findall(r"(episode\s*\d+|s\d+\s*e\d+)", html, re.I)) >= 3
+    return len(re.findall(r'(episode\s*\d+|s\d+\s*e\d+)', html, re.I)) >= 3
 
 
 def is_series(url: str, html: str) -> bool:
-    url_l = (url or "").lower()
+    url_l = (url or '').lower()
 
     if SERIES_URL_PAT.search(url_l):
         return True
-    if re.search(r"full-movie\b|movie\b", url_l, re.I):
+    if re.search(r'full-movie\b|movie\b', url_l, re.I):
         return False
 
     parts = []
-    for pat in (r"<title[^>]*>(.*?)</title>", r"<h1[^>]*>(.*?)</h1>"):
+    for pat in (r'<title[^>]*>(.*?)</title>', r'<h1[^>]*>(.*?)</h1>'):
         m = re.search(pat, html, flags=re.I | re.S)
         if m:
             parts.append(m.group(1))
 
-    head = re.sub(r"<[^>]+>", " ", " ".join(parts))
-    head = re.sub(r"\s+", " ", head).lower()
+    head = re.sub(r'<[^>]+>', ' ', ' '.join(parts))
+    head = re.sub(r'\s+', ' ', head).lower()
 
     if STRONG_SERIES.search(head):
         return True
 
-    chunk = re.sub(r"<[^>]+>", " ", html[:30000])
-    chunk = re.sub(r"\s+", " ", chunk).lower()
+    chunk = re.sub(r'<[^>]+>', ' ', html[:30000])
+    chunk = re.sub(r'\s+', ' ', chunk).lower()
 
     if STRONG_SERIES.search(chunk):
         return True
@@ -404,22 +405,22 @@ def determine_filesize(src):
         return {}
 
     headers = None
-    if hasattr(src, "headers"):
+    if hasattr(src, 'headers'):
         headers = src.headers
     elif isinstance(src, dict):
         headers = src
 
     if headers:
-        cl = headers.get("content-length") or headers.get("Content-Length")
+        cl = headers.get('content-length') or headers.get('Content-Length')
         try:
             n = int(cl)
             if n > 0:
-                return {"filesize": n}
+                return {'filesize': n}
         except Exception:
             pass
 
     text = (
-        src.decode("utf-8", "ignore")
+        src.decode('utf-8', 'ignore')
         if isinstance(src, bytes)
         else src
         if isinstance(src, str)
@@ -428,15 +429,15 @@ def determine_filesize(src):
 
     m = CONTENT_LEN_RE.search(text)
     if m:
-        return {"filesize": int(m.group(1))}
+        return {'filesize': int(m.group(1))}
 
     m = BADGE_SIZE_RE.search(text)
     if m:
         num_s, unit = m.groups()
         unit = unit.lower()
         try:
-            size = int(float(num_s.replace(",", "")) * _UNITS[unit])
-            return {"filesize_approx": size}
+            size = int(float(num_s.replace(',', '')) * _UNITS[unit])
+            return {'filesize_approx': size}
         except Exception:
             return {}
 
@@ -444,8 +445,8 @@ def determine_filesize(src):
     if m:
         num_s, unit = m.groups()
         try:
-            size = int(float(num_s.replace(",", "")) * _UNITS[unit.lower()])
-            return {"filesize_approx": size}
+            size = int(float(num_s.replace(',', '')) * _UNITS[unit.lower()])
+            return {'filesize_approx': size}
         except Exception:
             return {}
 
@@ -453,8 +454,8 @@ def determine_filesize(src):
     if m:
         num_s, unit = m.groups()
         try:
-            size = int(float(num_s.replace(",", "")) * _UNITS[unit.lower()])
-            return {"filesize_approx": size}
+            size = int(float(num_s.replace(',', '')) * _UNITS[unit.lower()])
+            return {'filesize_approx': size}
         except Exception:
             pass
 
@@ -462,37 +463,37 @@ def determine_filesize(src):
 
 
 def determine_ext(
-    url: str | None, other_text: str | None = None, default_ext: str = "mp4"
+    url: str | None, other_text: str | None = None, default_ext: str = 'mp4',
 ) -> str:
     def _pick_from(s: str | None) -> str | None:
         if not s:
             return None
         s = str(s).strip()
-        s = s.split("?", 1)[0].split("#", 1)[0].rstrip("/")
-        if "." not in s:
+        s = s.split('?', 1)[0].split('#', 1)[0].rstrip('/')
+        if '.' not in s:
             return None
-        ext = s.rsplit(".", 1)[-1].lower()
-        if "google" in url:
-            ext = "mkv"
+        ext = s.rsplit('.', 1)[-1].lower()
+        if 'google' in url:
+            ext = 'mkv'
         return ext if ext in KNOWN_EXTENSIONS else None
 
     return _pick_from(url) or _pick_from(other_text) or default_ext
 
 
-def bug_reports_message(before=";"):
+def bug_reports_message(before=';'):
     msg = (
-        f"please report this issue on https://github.com/{REPOSITORY}/issues?q=, "
-        f"filling out the appropriate issue template. Confirm you are on the latest version."
+        f'please report this issue on https://github.com/{REPOSITORY}/issues?q=, '
+        f'filling out the appropriate issue template. Confirm you are on the latest version.'
     )
 
-    before = (before or "").rstrip()
-    if not before or before.endswith((".", "!", "?")):
+    before = (before or '').rstrip()
+    if not before or before.endswith(('.', '!', '?')):
         msg = msg[:1].upper() + msg[1:]
-    return (before + " " if before else "") + msg
+    return (before + ' ' if before else '') + msg
 
 
 def ascii_color(text, code, enable=True):
-    return f"\033[{code}m{text}\033[0m" if enable else text
+    return f'\033[{code}m{text}\033[0m' if enable else text
 
 
 def is_tty(stream):
@@ -514,19 +515,17 @@ class NobiDLError(Exception):
 
     @property
     def _msg(self):
-        tag = ascii_color("[Error]", "31", self.color and is_tty(sys.stderr))
-        where = f": {self.url}" if self.url else ""
-        caused = f" (caused by {self.cause!r})" if self.cause else ""
-        tail = "" if self.expected else bug_reports_message(";")
-        return f"{tag}{where}: {self.orig_msg}{caused}{tail}"
+        tag = ascii_color('[Error]', '31', self.color and is_tty(sys.stderr))
+        where = f': {self.url}' if self.url else ''
+        caused = f' (caused by {self.cause!r})' if self.cause else ''
+        tail = '' if self.expected else bug_reports_message(';')
+        return f'{tag}{where}: {self.orig_msg}{caused}{tail}'
 
     def __setattr__(self, name, value):
         super().__setattr__(name, value)
-        if name != "args" and hasattr(self, "orig_msg"):
-            try:
+        if name != 'args' and hasattr(self, 'orig_msg'):
+            with suppress(Exception):
                 self.args = (self._msg,)
-            except Exception:
-                pass
 
     def __str__(self):
         return self._msg
@@ -538,7 +537,7 @@ def approx_filesize_from_tbr(tbr_kbps, duration):
     return int(float(tbr_kbps) * 1000 / 8 * float(duration))
 
 
-# TODO Remove When needed
+# TODO(0xvd): Remove When needed
 # def tbr_from_filesize(filesize_bytes: int, duration_sec: float) -> int | None:
 #     if not filesize_bytes or not duration_sec:
 #         return {}
@@ -552,7 +551,7 @@ def approx_filesize_from_tbr(tbr_kbps, duration):
 #     tbr = int((filesize * 8) / duration_sec / 1000)
 #     return {"tbr": tbr}
 
-# TODO Remove When needed
+# TODO(oxvd): Remove When needed
 # def duration_from_anywhere(text: str):
 #     if not text:
 #         return None
@@ -603,11 +602,11 @@ def fix_entries(self, entries: list) -> list:
     fixed = {}
 
     for entry in entries:
-        season = entry.get("season")
-        episode = entry.get("episode")
+        season = entry.get('season')
+        episode = entry.get('episode')
 
         if not all((season, episode)):
-            self.show_warning("Missing season/episode, skipping")
+            self.show_warning('Missing season/episode, skipping')
             continue
 
         key = (season, episode)
@@ -615,7 +614,7 @@ def fix_entries(self, entries: list) -> list:
         if key not in fixed:
             fixed[key] = entry
         else:
-            fixed[key]["formats"].extend(entry.get("formats", []))
+            fixed[key]['formats'].extend(entry.get('formats', []))
 
     return list(fixed.values())
 
@@ -629,6 +628,5 @@ def filename_from_title(title: str, url, ext=None) -> str:
     norm_title, _ = movie_keys(title)
     title_ext = determine_ext(norm_title, norm_title)
     if title_ext:
-        norm_title = norm_title.replace(title_ext, "")
-    filename = f"{norm_title}.{ext}" if "." not in ext else norm_title + ext
-    return filename
+        norm_title = norm_title.replace(title_ext, '')
+    return f'{norm_title}.{ext}' if '.' not in ext else norm_title + ext

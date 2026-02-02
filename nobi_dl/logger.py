@@ -32,15 +32,15 @@ class Log:
             return
         if not isinstance(s, str):
             s = str(s)
-        if newline and not s.endswith("\n"):
-            s += "\n"
+        if newline and not s.endswith('\n'):
+            s += '\n'
         self._write(s, stream=self._out, only_once=only_once)
 
     def to_stderr(self, s: str, *, only_once=False, newline=True):
         if s is None:
             return
-        if newline and not s.endswith("\n"):
-            s += "\n"
+        if newline and not s.endswith('\n'):
+            s += '\n'
         self._write(s, stream=self._err, only_once=only_once)
 
     def set_ie(self, ie, suffix=None):
@@ -51,33 +51,33 @@ class Log:
         ie = self._ctx_ie
         suffix = self.suffix
         if not ie:
-            return f"[{suffix}] " if suffix else ""
-        name = getattr(ie, "_IE_NAME", None) or ie.__class__.__name__
+            return f'[{suffix}] ' if suffix else ''
+        name = getattr(ie, '_IE_NAME', None) or ie.__class__.__name__
         if suffix is not None:
-            return f"[{name}][{self.suffix}] "
-        return f"[{name}] "
+            return f'[{name}][{self.suffix}] '
+        return f'[{name}] '
 
     def to_screen(self, message, *, only_once=False):
         if message is None:
             return
-        if self._param("quiet", False) and not self._param("verbose", 0):
+        if self._param('quiet', False) and not self._param('verbose', 0):
             return
         ie = self._ie()
         if not ie:
-            ie = ""
-        self.to_stdout(f"{ie}{message}", only_once=only_once)
+            ie = ''
+        self.to_stdout(f'{ie}{message}', only_once=only_once)
 
     def write_debug(self, message):
         if message is None:
             return
-        if self._param("verbose", 0):
-            self.to_stderr(f"[debug] {message}")
+        if self._param('verbose', 0):
+            self.to_stderr(f'[debug] {message}')
 
     def warning(self, message: str):
-        prefix = "[WARNING]"
-        if getattr(self._err, "isatty", lambda: False)():
-            prefix = "\033[33m[WARNING]\033[0m"
-        self.to_stderr(f"{prefix}: {message}", only_once=True)
+        prefix = '[WARNING]'
+        if getattr(self._err, 'isatty', lambda: False)():
+            prefix = '\033[33m[WARNING]\033[0m'
+        self.to_stderr(f'{prefix}: {message}', only_once=True)
 
     def error(self, message: str, fatal=False):
         if fatal is True:

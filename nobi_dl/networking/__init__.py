@@ -1,3 +1,3 @@
 from ._request_handler import Request
 
-all = [Request]
+__all__ = [Request]

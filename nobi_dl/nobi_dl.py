@@ -23,7 +23,7 @@ class NobiDL:
     def __init__(self, opts, args, opt_error):
         self.args = args
         self.opts = opts
-        self.impersonate = getattr(opts, "impersonate", None)
+        self.impersonate = getattr(opts, 'impersonate', None)
         self.logger = Log(opts)
         self.write_debug = self.logger.write_debug
         self.to_screen = self.logger.to_screen
@@ -47,38 +47,39 @@ class NobiDL:
         argv = sys.argv[1:]
         pyver = sys.version.split()[0]
         impl = platform.python_implementation()
-        arch = "x86_64" if struct.calcsize("P") * 8 == 64 else "x86"
+        arch = 'x86_64' if struct.calcsize('P') * 8 == 64 else 'x86'
         plat = platform.platform()
-        openssl = getattr(ssl, "OPENSSL_VERSION", "unknown")
+        openssl = getattr(ssl, 'OPENSSL_VERSION', 'unknown')
         ies = ExtractorBase.gen_extractors(self)
-        request_handlers = ", ".join(self.request_handlers())
-        self.write_debug(f"Command-line config: {argv}")
-        self.write_debug(f"nobi-dl version: {__version__}")
-        self.write_debug(f"Python {pyver} ({impl} {arch}) - {plat} ({openssl})")
-        self.write_debug(f"exe: {sys.executable}")
-        self.write_debug(f"Request Handlers : {request_handlers}")
-        self.write_debug(f"Loaded {len(ies)} extractors")
+        request_handlers = ', '.join(self.request_handlers())
+        self.write_debug(f'Command-line config: {argv}')
+        self.write_debug(f'nobi-dl version: {__version__}')
+        self.write_debug(
+            f'Python {pyver} ({impl} {arch}) - {plat} ({openssl})')
+        self.write_debug(f'exe: {sys.executable}')
+        self.write_debug(f'Request Handlers : {request_handlers}')
+        self.write_debug(f'Loaded {len(ies)} extractors')
         self.ping_and_speed()
 
     def _fmt_speed(self, bps: float) -> str:
-        for unit in ("B/s", "KiB/s", "MiB/s", "GiB/s"):
+        for unit in ('B/s', 'KiB/s', 'MiB/s', 'GiB/s'):
             if bps < 1024:
-                return f"{bps:.2f} {unit}"
+                return f'{bps:.2f} {unit}'
             bps /= 1024
-        return f"{bps:.2f} TiB/s"
+        return f'{bps:.2f} TiB/s'
 
     def estimate_speed(self):
         try:
-            url = "https://speed.cloudflare.com/__down?bytes=5000000"
+            url = 'https://speed.cloudflare.com/__down?bytes=5000000'
             t0 = time.perf_counter()
             r = self.extractor_base._request(url)
             size = len(r.content)
             dt = time.perf_counter() - t0
             bps = size / max(dt, 1e-6)
             speed_str = self._fmt_speed(bps)
-            self.write_debug(f"Downloading Speed: {speed_str}")
+            self.write_debug(f'Downloading Speed: {speed_str}')
         except Exception as e:
-            self.write_debug(f"Downloading Speed test fail {e}")
+            self.write_debug(f'Downloading Speed test fail {e}')
 
     def ping_and_speed(self):
         if not self.verbose:
@@ -86,22 +87,22 @@ class NobiDL:
         if self.verbose < 2:
             return
 
-        url = "https://www.google.com/generate_204"
+        url = 'https://www.google.com/generate_204'
         try:
             t0 = time.perf_counter()
             self.extractor_base._request(url)
             ping_ms = (time.perf_counter() - t0) * 1000
-            self.write_debug(f"Ping: {ping_ms:.1f} ms")
+            self.write_debug(f'Ping: {ping_ms:.1f} ms')
             self.estimate_speed()
         except Exception as e:
-            self.write_debug(f"Ping fail {e}")
+            self.write_debug(f'Ping fail {e}')
 
     def show_list_extractors(self):
         if self.list_extractors is False:
             return
         for extractor in self.extractor_base.gen_extractors(self):
             extractor = extractor._IE_NAME or extractor.__name__
-            self.write(f"{extractor}")
+            self.write(f'{extractor}')
 
         return 0
 
@@ -145,24 +146,26 @@ class NobiDL:
         return request_handlers
 
     def resolve_info_dict(self, info_dict_or_entry):
-        formats = info_dict_or_entry.get("formats")
-        resolved_formats = Resolve_FMTS(self, info_dict_or_entry, None, formats)()
-        info_dict_or_entry.pop("formats")
-        return {**info_dict_or_entry, "formats": resolved_formats}
+        formats = info_dict_or_entry.get('formats')
+        resolved_formats = Resolve_FMTS(
+            self, info_dict_or_entry, None, formats)()
+        info_dict_or_entry.pop('formats')
+        return {**info_dict_or_entry, 'formats': resolved_formats}
 
     def handle_playlist(self, info_dict):
         resolved_entries = []
-        entries = info_dict.get("entries", [])
+        entries = info_dict.get('entries', [])
 
         items = len(entries)
-        title = info_dict.get("title")
+        title = info_dict.get('title')
 
-        self.write(f"[info] Downloading Series: {title}")
-        self.to_screen(f"Playlist {title} Downloading {items} items of {items}")
+        self.write(f'[info] Downloading Series: {title}')
+        self.to_screen(
+            f'Playlist {title} Downloading {items} items of {items}')
 
         for item, entry in enumerate(entries, start=1):
             self.to_screen(
-                f"Downloading item {ascii_color(item, 32)} of {ascii_color(items, 34)}"
+                f'Downloading item {ascii_color(item, 32)} of {ascii_color(items, 34)}',
             )
 
             if self.opts.dump_json:
@@ -172,16 +175,16 @@ class NobiDL:
             if self.opts.dump_json:
                 playlist = {
                     **info_dict,
-                    "entries": resolved_entries,
+                    'entries': resolved_entries,
                 }
                 self.write(json.dumps(playlist))
 
             elif self.opts.list_formats:
-                formats = entry.get("formats")
-                title = entry.get("title") or "Unkown title"
+                formats = entry.get('formats')
+                title = entry.get('title') or 'Unkown title'
                 if not formats:
                     pass
-                self.write(f"[info] Downloading {title}")
+                self.write(f'[info] Downloading {title}')
                 self.write(render_formats_table(formats, entry))
                 continue
 
@@ -190,26 +193,26 @@ class NobiDL:
         return None
 
     def gen_info_dict(self, info):
-        info.setdefault("fulltitle", info.get("title"))
-        info.setdefault("thumbnails", [])
-        info.setdefault("series", bool(info.get("entries")))
-        info.setdefault("formats", [])
-        info.setdefault("ie", self._ie)
+        info.setdefault('fulltitle', info.get('title'))
+        info.setdefault('thumbnails', [])
+        info.setdefault('series', bool(info.get('entries')))
+        info.setdefault('formats', [])
+        info.setdefault('ie', self._ie)
 
-        for f in info["formats"]:
-            f.setdefault("protocol", "https")
-            f.setdefault("vcodec", None)
-            f.setdefault("acodec", None)
-            f.setdefault("fps", None)
-            f.setdefault("filesize", None)
-            f.setdefault("filesize_approx", None)
-            f.setdefault("abr", None)
-            f.setdefault("tbr", None)
-            f.setdefault("language", None)
-            f.setdefault("audio_channels", None)
-            headers = f.get("http_headers") or f.get("https_headers")
+        for f in info['formats']:
+            f.setdefault('protocol', 'https')
+            f.setdefault('vcodec', None)
+            f.setdefault('acodec', None)
+            f.setdefault('fps', None)
+            f.setdefault('filesize', None)
+            f.setdefault('filesize_approx', None)
+            f.setdefault('abr', None)
+            f.setdefault('tbr', None)
+            f.setdefault('language', None)
+            f.setdefault('audio_channels', None)
+            headers = f.get('http_headers') or f.get('https_headers')
             if headers:
-                f.setdefault("http_headers", headers)
+                f.setdefault('http_headers', headers)
 
         return info
 
@@ -221,7 +224,7 @@ class NobiDL:
             return self.show_list_extractors()
 
         if not self.opts.search and not self.args:
-            self.opt_error("No url or search query provided")
+            self.opt_error('No url or search query provided')
             return
 
         url = None
@@ -232,47 +235,47 @@ class NobiDL:
 
         elif self.args:
             arg = self.args[0]
-            if arg.startswith(("http://", "https://")):
+            if arg.startswith(('http://', 'https://')):
                 url = arg
             else:
                 q = arg
 
         if q:
             result = self.searcher.search(q)
-            best = result.get("best")
+            best = result.get('best')
             if not best:
-                self.to_screen(f"[info] No Result found for {q}")
+                self.to_screen(f'[info] No Result found for {q}')
                 return
-            url = best.get("url")
+            url = best.get('url')
 
         if not url:
-            self.to_screen("[error] No URL provided")
+            self.to_screen('[error] No URL provided')
             return
 
         ie = ExtractorBase.get_extractor(self, url)
         if not ie:
-            self.raise_error(f"Unsupported url: {url}")
+            self.raise_error(f'Unsupported url: {url}')
             return
 
         self._ie = ie
         self.logger.set_ie(self._ie)
-        self.to_screen(f"Extracting url: {url}")
+        self.to_screen(f'Extracting url: {url}')
         info = self._ie.extract(url)
         if not info or info is None:
             return self.show_warning(
-                "Extractor return nothing there is an error in Extractor."
+                'Extractor return nothing there is an error in Extractor.',
             )
         info_dict = self.gen_info_dict(info)
-        if info_dict.get("_type") == "series":
+        if info_dict.get('_type') == 'series':
             return self.handle_playlist(info)
 
-        if not info_dict.get("formats"):
-            raise NobiDLError("No Formats Found", url=url)
+        if not info_dict.get('formats'):
+            raise NobiDLError('No Formats Found', url=url)
 
-        if self.opts.list_formats and info_dict.get("formats"):
-            title = info_dict.get("title")
-            self.write(f"[info] Available formats for {title}")
-            self.write(render_formats_table(info_dict["formats"], info_dict))
+        if self.opts.list_formats and info_dict.get('formats'):
+            title = info_dict.get('title')
+            self.write(f'[info] Available formats for {title}')
+            self.write(render_formats_table(info_dict['formats'], info_dict))
             pass
 
         if self.opts.dump_json:
@@ -280,7 +283,7 @@ class NobiDL:
             self.write(json.dumps(resolved_info))
             pass
 
-        if not self.opts.list_formats and info_dict.get("formats"):
+        if not self.opts.list_formats and info_dict.get('formats'):
             self.downloader(self, info_dict, self.opts, self.logger)()
             return
 
@@ -296,7 +299,7 @@ def main():
         md._real_extract()
 
     except KeyboardInterrupt:
-        md.write("Interrupted by user")
+        md.write('Interrupted by user')
         raise SystemExit(130)
 
     except NobiDLError as e:

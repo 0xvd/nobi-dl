@@ -1,3 +1,3 @@
-__version__ = "2026.2.2"
+__version__ = '2026.2.2.post1'
 
-REPOSITORY = "0xvd/nobi-dl"
+REPOSITORY = '0xvd/nobi-dl'

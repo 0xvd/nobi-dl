@@ -2,7 +2,7 @@
 
 import sys
 
-if __package__ is None and not getattr(sys, "frozen", False):
+if __package__ is None and not getattr(sys, 'frozen', False):
     import os.path
 
     path = os.path.realpath(os.path.abspath(__file__))
@@ -10,5 +10,5 @@ if __package__ is None and not getattr(sys, "frozen", False):
 
 from nobi_dl import main
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

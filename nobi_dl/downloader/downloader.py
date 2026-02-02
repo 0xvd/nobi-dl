@@ -15,11 +15,11 @@ class Downloader:
         return self.downloader()
 
     def downloader(self):
-        formats = self.info_dict.get("formats") or []
+        formats = self.info_dict.get('formats') or []
         bfmt = BestFMT(formats)()
         bfmt = Resolve_FMTS(self.md, self.info_dict, bfmt, None)()
-        url = bfmt.get("url")
-        if "m3u8" in url:
+        url = bfmt.get('url')
+        if 'm3u8' in url:
             return HlsDL(bfmt, self.info_dict, self.options, self.logger)()
         else:
             return HttpDownloader(bfmt, self.info_dict, self.options, self.logger)()

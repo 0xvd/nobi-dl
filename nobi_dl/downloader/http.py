@@ -7,28 +7,29 @@ from .common import ProgressPrinter
 
 
 class HttpDownloader:
-    def __init__(self, format, info_dict, options, logger):
-        self.format = format
+    def __init__(self, fmt, info_dict, options, logger):
+        self.format = fmt
         self.info_dict = info_dict
-        self.formats = info_dict.get("formats") or []
+        self.formats = info_dict.get('formats') or []
         self.opts = options
         self.logger = logger
         self.stdout = logger.to_stdout
         self.continue_dl = self.opts.continue_dl
 
     def to_screen(self, msg):
-        return self.stdout(f"[http_downloader] {msg}")
+        return self.stdout(f'[http_downloader] {msg}')
 
     def __call__(self):
         return self.downloader()
 
     def _prepare_download(self, fmt):
-        title = self.info_dict.get("title")
-        url = fmt["url"]
-        ext = fmt.get("ext", "mp4")
+        title = self.info_dict.get('title')
+        url = fmt['url']
+        ext = fmt.get('ext', 'mp4')
 
-        filename = filename_from_title(title, url) if title else f"Unknown movie.{ext}"
-        part = filename + ".part"
+        filename = filename_from_title(
+            title, url) if title else f'Unknown movie.{ext}'
+        part = filename + '.part'
 
         resume_from = 0
         if self.continue_dl and os.path.exists(part):
@@ -38,22 +39,22 @@ class HttpDownloader:
 
     def _open_response(self, url, resume_from, headers):
         if resume_from:
-            headers["Range"] = f"bytes={resume_from}-"
+            headers['Range'] = f'bytes={resume_from}-'
 
         resp = Request(
             url=url,
             logger=self.logger,
-            method="GET",
+            method='GET',
             stream=True,
             headers=headers,
         )()
 
-        if resume_from and getattr(resp, "status_code", None) == 200:
-            headers.pop("Range", None)
+        if resume_from and getattr(resp, 'status_code', None) == 200:
+            headers.pop('Range', None)
             resp = Request(
                 url=url,
                 logger=self.logger,
-                method="GET",
+                method='GET',
                 stream=True,
                 headers=headers,
             )()
@@ -61,16 +62,16 @@ class HttpDownloader:
         return resp
 
     def _detect_total_size(self, resp, resume_from, fmt):
-        hdrs = getattr(resp, "headers", {}) or {}
+        hdrs = getattr(resp, 'headers', {}) or {}
 
-        cr = hdrs.get("Content-Range") or hdrs.get("content-range")
-        if cr and "/" in cr:
+        cr = hdrs.get('Content-Range') or hdrs.get('content-range')
+        if cr and '/' in cr:
             try:
-                return int(cr.split("/")[-1])
+                return int(cr.split('/')[-1])
             except ValueError:
                 pass
 
-        cl = hdrs.get("Content-Length") or hdrs.get("content-length")
+        cl = hdrs.get('Content-Length') or hdrs.get('content-length')
         if cl:
             try:
                 size = int(cl)
@@ -78,7 +79,7 @@ class HttpDownloader:
             except ValueError:
                 pass
 
-        for value in ("filesize", "filesize_approx"):
+        for value in ('filesize', 'filesize_approx'):
             value = fmt.get(value)
             if isinstance(value, (int, float)) and value > 0:
                 return int(value)
@@ -95,11 +96,11 @@ class HttpDownloader:
 
         iterator = (
             resp.iter_bytes(1024 * 256)
-            if hasattr(resp, "iter_bytes")
+            if hasattr(resp, 'iter_bytes')
             else resp.iter_content(chunk_size=1024 * 256)
         )
 
-        with open(part, "ab" if resume_from else "wb") as f:
+        with open(part, 'ab' if resume_from else 'wb') as f:
             for chunk in iterator:
                 if not chunk:
                     continue
@@ -127,15 +128,15 @@ class HttpDownloader:
 
                     progress(
                         {
-                            "status": "downloading",
-                            "filename": filename,
-                            "downloaded_bytes": downloaded,
-                            "total_bytes": total,
-                            "speed": ema_speed,
-                            "eta": eta,
-                            "elapsed": now - t0,
-                            "progress_type": "bytes",
-                        }
+                            'status': 'downloading',
+                            'filename': filename,
+                            'downloaded_bytes': downloaded,
+                            'total_bytes': total,
+                            'speed': ema_speed,
+                            'eta': eta,
+                            'elapsed': now - t0,
+                            'progress_type': 'bytes',
+                        },
                     )
 
                     last_t = now
@@ -149,38 +150,38 @@ class HttpDownloader:
 
         self.to_screen(f"Downloading format: {fmt.get('format_id')}")
         self.to_screen(f'Invoking [http] Downloader on "{fmt["url"]}"')
-        self.to_screen(f"Destination: {filename}")
+        self.to_screen(f'Destination: {filename}')
 
-        headers = dict(fmt.get("https_headers") or {})
+        headers = dict(fmt.get('https_headers') or {})
         resp = None
 
         try:
-            resp = self._open_response(fmt["url"], resume_from, headers)
+            resp = self._open_response(fmt['url'], resume_from, headers)
             total = self._detect_total_size(resp, resume_from, fmt)
 
             downloaded, elapsed = self._download_stream(
-                resp, part, resume_from, total, filename
+                resp, part, resume_from, total, filename,
             )
 
             os.replace(part, filename)
 
             ProgressPrinter(self.logger)(
                 {
-                    "status": "finished",
-                    "filename": filename,
-                    "downloaded_bytes": downloaded,
-                    "total_bytes": total,
-                    "elapsed": elapsed,
-                    "progress_type": "bytes",
-                }
+                    'status': 'finished',
+                    'filename': filename,
+                    'downloaded_bytes': downloaded,
+                    'total_bytes': total,
+                    'elapsed': elapsed,
+                    'progress_type': 'bytes',
+                },
             )
 
         except KeyboardInterrupt:
             self.to_screen(
-                "Interrupted by user. add -c or --continue for continue downloading."
+                'Interrupted by user. add -c or --continue for continue downloading.',
             )
             raise SystemExit(130)
 
         finally:
-            if resp and hasattr(resp, "close"):
+            if resp and hasattr(resp, 'close'):
                 resp.close()

@@ -63,7 +63,7 @@ class ExtractorBase:
         self,
         url,
         *,
-        method="GET",
+        method='GET',
         headers=None,
         cookies=None,
         query=None,
@@ -74,48 +74,48 @@ class ExtractorBase:
         if note:
             self.to_screen(note)
 
-        kw = dict(
-            url=url,
-            method=method,
-            headers=headers,
-            cookies=cookies,
-            query=query,
-            data=data,
-            timeout=timeout,
-            impersonate=self.impersonate,
-        )
+        kw = {
+            'url': url,
+            'method': method,
+            'headers': headers,
+            'cookies': cookies,
+            'query': query,
+            'data': data,
+            'timeout': timeout,
+            'impersonate': self.impersonate,
+        }
 
         return Request(**kw, verbose=self.network_verbose, logger=self.logger)()
 
-    def _download_webpage(self, url, note="Downloading Webpage", **kw):
-        return self._request(url, method="GET", **kw, note=note).text
+    def _download_webpage(self, url, note='Downloading Webpage', **kw):
+        return self._request(url, method='GET', **kw, note=note).text
 
-    def _download_json(self, url, note="Downloading Json", **kw):
-        method = "POST" if (kw.get("data") or {}) else "GET"
+    def _download_json(self, url, note='Downloading Json', **kw):
+        method = 'POST' if (kw.get('data') or {}) else 'GET'
         return self._request(url, method=method, **kw, note=note).json()
 
-    def _ping_host(self, url, note="ping Host", **kw):
-        return self._request(url, method="GET", **kw, note=note).status_code
+    def _ping_host(self, url, note='ping Host', **kw):
+        return self._request(url, method='GET', **kw, note=note).status_code
 
-    def extract_m3u8_formats(self, m3u8_url, label="hls", headers=None, duration=None):
+    def extract_m3u8_formats(self, m3u8_url, label='hls', headers=None, duration=None):
         m3u8 = self._download_webpage(
-            m3u8_url, headers=headers or {}, note="Downloading m3u8 information"
+            m3u8_url, headers=headers or {}, note='Downloading m3u8 information',
         )
-        if not m3u8 or not m3u8.lstrip().startswith("#EXTM3U"):
+        if not m3u8 or not m3u8.lstrip().startswith('#EXTM3U'):
             return []
 
-        if "#EXT-X-STREAM-INF" not in m3u8:
+        if '#EXT-X-STREAM-INF' not in m3u8:
             fmt = [
                 {
-                    "url": m3u8_url,
-                    "label": random_id(),
-                    "ext": "mp4",
-                    "vcodec": True,
-                    "acodec": True,
-                }
+                    'url': m3u8_url,
+                    'label': random_id(),
+                    'ext': 'mp4',
+                    'vcodec': True,
+                    'acodec': True,
+                },
             ]
             if headers:
-                fmt["http_headers"] = headers
+                fmt['http_headers'] = headers
 
             return fmt
 
@@ -123,34 +123,34 @@ class ExtractorBase:
         last = None
         for line in m3u8.splitlines():
             line = line.strip()
-            if line.startswith("#EXT-X-STREAM-INF:"):
+            if line.startswith('#EXT-X-STREAM-INF:'):
                 last = line
                 continue
-            if not line or line.startswith("#") or not last:
+            if not line or line.startswith('#') or not last:
                 continue
 
             u = urllib.parse.urljoin(m3u8_url, line)
             w, h = _parse_m3u8_resolution(last)
-            bw = _m3u8_attr(last, "BANDWIDTH")
+            bw = _m3u8_attr(last, 'BANDWIDTH')
             tbr = int(bw) // 1000 if (bw and bw.isdigit()) else None
 
             fmt = {
-                "url": u,
-                "format_id": (f"{h or w or 'var'}"),
-                "width": w,
-                "height": h,
-                "tbr": tbr,
-                "ext": "mp4",
-                "vcodec": True,
-                "acodec": True,
-                "format_note": label,
+                'url': u,
+                'format_id': (f"{h or w or 'var'}"),
+                'width': w,
+                'height': h,
+                'tbr': tbr,
+                'ext': 'mp4',
+                'vcodec': True,
+                'acodec': True,
+                'format_note': label,
             }
             if headers:
-                fmt["http_headers"] = headers
+                fmt['http_headers'] = headers
             if duration:
                 approx = approx_filesize_from_tbr(tbr, duration)
                 if approx:
-                    fmt["filesize_approx"] = approx
+                    fmt['filesize_approx'] = approx
             out.append(fmt)
             last = None
 
@@ -165,13 +165,13 @@ class ExtractorBase:
         **kwargs,
     ):
         if playlist_url:
-            kwargs["url"] = playlist_url
+            kwargs['url'] = playlist_url
         if playlist_title:
-            kwargs["title"] = playlist_title
+            kwargs['title'] = playlist_title
         if playlist_description is not None:
-            kwargs["description"] = playlist_description
+            kwargs['description'] = playlist_description
         return {
             **kwargs,
-            "_type": "series",
-            "entries": entries,
+            '_type': 'series',
+            'entries': entries,
         }

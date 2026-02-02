@@ -31,7 +31,7 @@ class RequestsRH:
         self.query = query or {}
         self.data = data or {}
         self.timeout = timeout or 20
-        self.method = method or "GET"
+        self.method = method or 'GET'
         self.retries = retries
         self.stream = stream
 
@@ -45,7 +45,7 @@ class RequestsRH:
     def print_traffic(self):
         if self.verbose is False:
             return
-        self._print_verbose(f"Sending Request via {requests.__name__}")
+        self._print_verbose(f'Sending Request via {requests.__name__}')
         http.client.HTTPSConnection.debuglevel = 1
         http.client.HTTPConnection.debuglevel = 1
 
@@ -72,7 +72,7 @@ class RequestsRH:
                 )
                 GLOBAL_SESSION.cookies.update(resp.cookies)
                 if resp.status_code in (429, 503, 502, 504):
-                    last_err = RuntimeError(f"HTTP {resp.status_code}")
+                    last_err = RuntimeError(f'HTTP {resp.status_code}')
                     continue
 
                 return resp
@@ -82,7 +82,8 @@ class RequestsRH:
                 continue
 
             except req_exc.ConnectionError:
-                self.logger.to_stdout("[network] Connection Error Forcing to Curl cffi")
+                self.logger.to_stdout(
+                    '[network] Connection Error Forcing to Curl cffi')
                 return Curl_cfiiRH(
                     self.url,
                     self.method,

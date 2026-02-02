@@ -8,9 +8,9 @@ from .common import ProgressPrinter
 
 
 class HlsDL:
-    def __init__(self, format, info_dict, options, logger):
+    def __init__(self, fmt, info_dict, options, logger):
         self.info_dict = info_dict
-        self.format = format
+        self.format = fmt
         self.opts = options
         self.logger = logger
         self.to_stdout = logger.to_stdout
@@ -21,7 +21,7 @@ class HlsDL:
         return self.downloader_hls()
 
     def to_screen(self, msg):
-        return self.to_stdout(f"[hls_native] {msg}")
+        return self.to_stdout(f'[hls_native] {msg}')
 
     def extract_all_hls_fragments(self, text: str) -> list[str]:
         fragments = []
@@ -33,11 +33,11 @@ class HlsDL:
             if not line:
                 continue
 
-            if line.startswith("#EXTINF"):
+            if line.startswith('#EXTINF'):
                 expect_url = True
                 continue
 
-            if expect_url and not line.startswith("#"):
+            if expect_url and not line.startswith('#'):
                 fragments.append(line)
                 expect_url = False
 
@@ -45,33 +45,33 @@ class HlsDL:
 
     def hls_data(self, url, headers=None):
         headers = headers or {}
-        self.to_screen("Downloading m3u8 information")
+        self.to_screen('Downloading m3u8 information')
         hls_data = Request(url, headers=headers)()
-        hls_data = hls_data.text
-        return hls_data
+        return hls_data.text
 
     def nobidl_filename(self, filename):
-        filename = filename.replace(".part", "") if ".part" in filename else filename
-        return filename + ".nobidl"
+        filename = filename.replace(
+            '.part', '') if '.part' in filename else filename
+        return filename + '.nobidl'
 
     def read_nobidl_data(self, filename):
         if not os.path.exists(filename):
             return {}
 
         try:
-            with open(filename, "r") as f:
+            with open(filename) as f:
                 return json.load(f)
         except Exception:
             return {}
 
     def max_existing_fragment(self, filename):
-        base = filename + ".part-Frag"
+        base = filename + '.part-Frag'
         found = []
 
-        for f in os.listdir("."):
-            if f.startswith(os.path.basename(base)) and f.endswith(".part"):
+        for f in os.listdir('.'):
+            if f.startswith(os.path.basename(base)) and f.endswith('.part'):
                 try:
-                    idx = int(f.split("Frag")[1].split(".")[0])
+                    idx = int(f.split('Frag')[1].split('.')[0])
                     found.append(idx)
                 except Exception:
                     pass
@@ -87,7 +87,7 @@ class HlsDL:
         disk_idx = self.max_existing_fragment(filename)
         if not nobi_data:
             return (disk_idx + 1) if disk_idx is not None else 0
-        json_idx = nobi_data.get("current_fragment", 0)
+        json_idx = nobi_data.get('current_fragment', 0)
         if disk_idx is None:
             return json_idx
 
@@ -96,17 +96,17 @@ class HlsDL:
     def write_nobi_data(self, filename, curr_frag):
         nobi_filename = (
             self.nobidl_filename(filename)
-            if not filename.endswith(".nobidl")
+            if not filename.endswith('.nobidl')
             else filename
         )
 
-        tmp = nobi_filename + ".tmp"
-        with open(tmp, "w") as wr:
+        tmp = nobi_filename + '.tmp'
+        with open(tmp, 'w') as wr:
             json.dump(
                 {
-                    "note": "Do not delete this file if you want to resume your download",
-                    "current_fragment": curr_frag,
-                    "written_by": "NOBI_DL",
+                    'note': 'Do not delete this file if you want to resume your download',
+                    'current_fragment': curr_frag,
+                    'written_by': 'NOBI_DL',
                 },
                 wr,
                 indent=2,
@@ -116,7 +116,7 @@ class HlsDL:
         return True
 
     def frag_filename(self, index: int) -> str:
-        return f"Frag{index:06d}.part"
+        return f'Frag{index:06d}.part'
 
     def remove_already_downloaded_fragments(
         self,
@@ -125,11 +125,11 @@ class HlsDL:
     ) -> list:
         if last_idx_frag is None:
             return total_frag
-        return total_frag[last_idx_frag + 1 :]
+        return total_frag[last_idx_frag + 1:]
 
     def write_chunk_in_file(self, resp, filename):
-        with open(filename, "ab") as f:
-            it = getattr(resp, "iter_bytes", None)
+        with open(filename, 'ab') as f:
+            it = getattr(resp, 'iter_bytes', None)
             if it:
                 for chunk in it(1024 * 64):
                     if chunk:
@@ -145,35 +145,35 @@ class HlsDL:
     def downloader_hls(self):
         try:
             bfmt = self.format
-            title = self.info_dict.get("title")
-            url = bfmt.get("url")
-            ext = "mp4"
-            format_id = bfmt.get("format_id")
+            title = self.info_dict.get('title')
+            url = bfmt.get('url')
+            ext = 'mp4'
+            format_id = bfmt.get('format_id')
 
             filename = (
                 filename_from_title(title, url, ext)
                 if title
-                else f"Unknown_movie.{ext}"
+                else f'Unknown_movie.{ext}'
             )
-            part = filename + ".hls.part"
+            part = filename + '.hls.part'
 
-            self.to_screen(f"Downloading format: {format_id}")
+            self.to_screen(f'Downloading format: {format_id}')
             self.to_screen(f'Invoking Downloader on "{url}"')
-            self.to_screen(f"Destination: {filename}")
+            self.to_screen(f'Destination: {filename}')
 
-            headers = bfmt.get("http_headers") or {}
+            headers = bfmt.get('http_headers') or {}
 
             hls_data = self.hls_data(url, headers=headers)
             all_fragments = self.extract_all_hls_fragments(hls_data)
 
             total_frags = len(all_fragments)
-            self.to_screen(f"Total Fragments: {total_frags}")
+            self.to_screen(f'Total Fragments: {total_frags}')
 
             resume_idx = self.check_continue_dl_and_files(filename)
             if resume_idx:
-                self.to_screen(f"Resume at {resume_idx} fragment")
+                self.to_screen(f'Resume at {resume_idx} fragment')
             fragments = self.remove_already_downloaded_fragments(
-                all_fragments, resume_idx
+                all_fragments, resume_idx,
             )
 
             downloaded = resume_idx
@@ -188,7 +188,7 @@ class HlsDL:
                 resp = Request(frag_url, headers=headers, stream=True)()
                 self.write_chunk_in_file(resp, frag_file)
 
-                with open(part, "ab") as out, open(frag_file, "rb") as frag:
+                with open(part, 'ab') as out, open(frag_file, 'rb') as frag:
                     out.write(frag.read())
 
                 self.remove_frag_file(frag_file)
@@ -204,7 +204,8 @@ class HlsDL:
                     if ema_speed is None:
                         ema_speed = inst_speed
                     else:
-                        ema_speed = alpha * inst_speed + (1 - alpha) * ema_speed
+                        ema_speed = alpha * inst_speed + \
+                            (1 - alpha) * ema_speed
                 else:
                     inst_speed = None
 
@@ -216,13 +217,13 @@ class HlsDL:
 
                 self.printer(
                     {
-                        "status": "downloading",
-                        "progress_type": "fragments",
-                        "downloaded_fragments": idx + 1,
-                        "total_fragments": total_frags,
-                        "speed": ema_speed,
-                        "eta": eta,
-                    }
+                        'status': 'downloading',
+                        'progress_type': 'fragments',
+                        'downloaded_fragments': idx + 1,
+                        'total_fragments': total_frags,
+                        'speed': ema_speed,
+                        'eta': eta,
+                    },
                 )
 
                 last_t = now
@@ -232,20 +233,20 @@ class HlsDL:
             os.remove(self.nobidl_filename(filename))
             self.printer(
                 {
-                    "status": "finished",
-                    "progress_type": "fragments",
-                    "downloaded_fragments": total_frags,
-                    "total_fragments": total_frags,
-                    "speed": None,
-                    "eta": None,
-                }
+                    'status': 'finished',
+                    'progress_type': 'fragments',
+                    'downloaded_fragments': total_frags,
+                    'total_fragments': total_frags,
+                    'speed': None,
+                    'eta': None,
+                },
             )
 
         except Exception:
             raise SystemExit(130)
 
         try:
-            if resp and getattr(resp, "close", None):
+            if resp and getattr(resp, 'close', None):
                 resp.close()
         except Exception:
             pass
@@ -254,15 +255,15 @@ class HlsDL:
             if self.printer:
                 self.printer(
                     {
-                        "status": "error",
-                        "progress_type": "fragments",
-                        "downloaded_fragments": total_frags,
-                        "total_fragments": total_frags,
-                        "speed": None,
-                        "eta": None,
-                    }
+                        'status': 'error',
+                        'progress_type': 'fragments',
+                        'downloaded_fragments': total_frags,
+                        'total_fragments': total_frags,
+                        'speed': None,
+                        'eta': None,
+                    },
                 )
             self.to_screen(
-                "Interrupted by user. add -c or --continue for continue downloading."
+                'Interrupted by user. add -c or --continue for continue downloading.',
             )
             raise SystemExit(130)
