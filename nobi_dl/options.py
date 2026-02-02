@@ -122,8 +122,9 @@ def options():
 
     if opts.show_version:
         from nobi_dl.version import __version__
+
         p.exit(0, f"nobi-dl {__version__}\n")
-    
+
     opts.movie_url = args[0] if (args and not opts.search) else None
 
     if (

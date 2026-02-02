@@ -1,6 +1,8 @@
+import http.client
+
 import requests
 from requests import exceptions as req_exc
-import http.client
+
 from ._curl_cffi import Curl_cfiiRH
 
 GLOBAL_SESSION = requests.Session()

@@ -1,19 +1,20 @@
+import itertools
+import re
+
 from ..nobi_dl import ExtractorBase
 from ..utils import (
-    _parse_a_tag,
-    _parse_a_tags,
-    is_series,
-    _search_regex,
     _og_thumbnail,
     _og_title,
+    _parse_a_tag,
+    _parse_a_tags,
+    _parse_resolution,
+    _search_regex,
     determine_ext,
     determine_filesize,
-    random_id,
-    _parse_resolution,
     fix_entries,
+    is_series,
+    random_id,
 )
-import re
-import itertools
 
 
 class MoviesModME(ExtractorBase):

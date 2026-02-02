@@ -1,35 +1,35 @@
+import re
+
+from ..extractors.hdhub import Hdhub4uME
 from ..nobi_dl import ExtractorBase
 from ..utils import (
-    _search_regex,
     _get_qparam,
-    _parse_resolution,
-    determine_ext,
-    determine_filesize,
     _og_title,
-    url_filename,
-    random_id,
     _parse_a_tag,
     _parse_a_tags,
+    _parse_resolution,
+    _search_regex,
+    b64d,
     clean_url,
+    determine_ext,
+    determine_filesize,
+    random_id,
+    url_filename,
 )
-import re
-from ..extractors.hdhub import Hdhub4uME
 
 
 class Resolve_FMTS(ExtractorBase):
-    def __init__(self, md, fmt: str = None, formats: dict = None):
+    def __init__(self, md, info_dict, fmt: str = None, formats: dict = None):
         super().__init__(md)
         self.formats = formats
         self.fmt = fmt
+        self._ie = info_dict.get("ie", None) if info_dict else None
 
     _GLOBAL_SEEN_URLS = set()
 
     @property
     def hdhubme(self):
         return Hdhub4uME(self.md)
-
-    def noter(self, msg):
-        return f"[lazy resolver] {msg}"
 
     def _google_resolver(self, url, need_dict=False):
         if "google" not in url:
@@ -40,9 +40,7 @@ class Resolve_FMTS(ExtractorBase):
             )
             if "google" not in url:
                 return {} if need_dict is True else None
-        google_head = self._request(
-            url, method="HEAD", note=self.noter("Ping Google server")
-        )
+        google_head = self._request(url, method="HEAD", note="Ping Google server")
         if google_head.status_code != 200:
             return {}
         headers = google_head.headers
@@ -63,7 +61,7 @@ class Resolve_FMTS(ExtractorBase):
 
     def fast_dl(self, url):
         fast_data = self._request(
-            url, method="POST", note=self.noter("Downloading Fast DL data")
+            url, method="POST", note="Downloading Fast DL data"
         ).text
         google_url = _search_regex(
             r"""href[^'"]+["'](https://?[^/]+googleuser[^"']+)['"]""", fast_data
@@ -79,9 +77,7 @@ class Resolve_FMTS(ExtractorBase):
         self._GLOBAL_SEEN_URLS.add(url)
 
         if "?id=" in url:
-            req = self._request(
-                url, method="HEAD", note=self.noter("ping pixel server")
-            )
+            req = self._request(url, method="HEAD", note="ping pixel server")
             google_url = _get_qparam(req.url, ("url", "url"))
             if not google_url:
                 return []
@@ -158,9 +154,7 @@ class Resolve_FMTS(ExtractorBase):
         if not domain:
             return []
 
-        webpage = self._download_webpage(
-            url, note=self.noter("Downloading hubdrive webpage")
-        )
+        webpage = self._download_webpage(url, note="Downloading hubdrive webpage")
 
         did = None
         if not did:
@@ -248,7 +242,7 @@ class Resolve_FMTS(ExtractorBase):
             domain,
             data={"_wp_http": value},
             method="POST",
-            note=self.noter("Downloading tech unblock webpage"),
+            note="Downloading tech unblock webpage",
         )
         url, name, post_value = re.search(
             r'''<form[^>]+action\s*=\s*['\"](?P<url>[^'\"]+)"?[^>]+>[^>]+name\s*=\s*['\"]+(?P<name>[^'\"]+)"[^>]+value\s*=\s*['\"]+(?P<value>[^'\"]+)"''',
@@ -258,7 +252,7 @@ class Resolve_FMTS(ExtractorBase):
             url,
             data={name: post_value},
             method="POST",
-            note=self.noter("Redirecting from tech unblock"),
+            note="Redirecting from tech unblock",
         )
         url, cname, cvalue = re.search(
             r"""setAttribute.+\b(?P<url>https[^'\"]+)[\s\S]+?s[^'\"]+'(?P<cname>[^'\"]+)'[^'\"]+'(?P<cvalue>[^'\"]+)""",
@@ -268,7 +262,7 @@ class Resolve_FMTS(ExtractorBase):
             url,
             cookies={cname: cvalue},
             method="POST",
-            note=self.noter("Downloading Final webpage of tech unblock"),
+            note="Downloading Final webpage of tech unblock",
         )
         final_url = re.search(r'''url\s*=\s*(?:['\"]+)?([^'\"]+)?"''', req3.text).group(
             1
@@ -354,6 +348,66 @@ class Resolve_FMTS(ExtractorBase):
             else:
                 return href
 
+    def bollyflix_formats(self, url, format_id=None):
+        qualties = []
+        url = self.bolly_url_decoder(url) if "?id=" in url else url
+        webpage = self._download_webpage(url)
+        for atag in _parse_a_tags(webpage):
+            href, name = _parse_a_tag(atag)
+            format_id = (name or "").lower()
+            if not any(
+                k in format_id
+                for k in ("instant", "fast cloud", "zipdisk", "pixel", "gofile")
+            ):
+                continue
+            if "pixel" in format_id:
+                self._parse_pixel(href)
+            elif "instant" in format_id:
+                return self._google_resolver(href)
+            elif "zipdisk" in format_id:
+                continue
+
+        return qualties
+
+    def bolly_url_decoder_resolver(self, url):
+        webpage = self._download_webpage(
+            url, note="Downloading Bolly URL Decoder Webpage"
+        )
+        out = []
+        for p1, p2 in re.findall(
+            r"""(?:'(?P<p1>[^']*)'\s*\+\s*)+'(?P<p2>[^']*)'?""", webpage
+        ):
+            parts = p1 + p2
+            if "tech-news" in parts:
+                out.append("https://box.tech-news.app")
+            elif ".com" in parts:
+                parts = f"https://{parts}" if "https" not in parts else parts
+                out.append(parts)
+        if not out:
+            return None
+        for domain in out:
+            try:
+                if self._ping_host(domain) == 200:
+                    return domain
+            except Exception:
+                pass
+        return out[0]
+
+    def bolly_url_decoder(self, url):
+        domain = self.bolly_url_decoder_resolver(url)
+        if domain is None:
+            webpage = self._download_webpage(
+                url, note="Downloading Bolly URL Decoder Webpage"
+            )
+        token = _search_regex(r"\bid\s*=([^/?&#]+)", url)
+        webpage = self._download_webpage(
+            f"{domain}/?id={token}", headers={"referer": clean_url(url)}
+        )
+        e_token = _search_regex(r'\blink\s*?"\s*:\s*"([^"]+)', webpage)
+        if not e_token:
+            return None
+        return b64d(e_token)
+
     def driveseed_direct(self, url):
         formats = []
         if "drive" not in url:
@@ -400,7 +454,7 @@ class Resolve_FMTS(ExtractorBase):
             return self._parse_fsl(url)
         elif any(k in url for k in ("nextdrive", "extdrive", "exdrive")):
             return self.nextdrive(url)
-        elif any(k in url for k in ("hubcloud", "web", "?id=")):
+        elif any(k in url for k in ("hubcloud", "web", "gadgetsweb")):
             return self._parse_hubcloud(url)
         elif any(k in url for k in ("driveseed", "tech", "modpro")):
             return self.drive_seed(url)
@@ -408,6 +462,8 @@ class Resolve_FMTS(ExtractorBase):
             return self._parse_direct_drive(url)
         elif "fast" in url:
             return self.fast_dl(url)
+        elif any(k in url for k in ("?id=", "gdflix")):
+            return self.bollyflix_formats(url)
         return url
 
     def resolve_format(self, fmt: dict) -> list[dict]:
@@ -436,7 +492,8 @@ class Resolve_FMTS(ExtractorBase):
 
     def _real_solver(self) -> list[dict]:
         self.write_debug("Lazy formats Resolving")
-
+        if self._ie:
+            self.logger.set_ie(self._ie, "lazy resolver")
         if self.formats:
             resolved_formats = []
             for fmt in self.formats:

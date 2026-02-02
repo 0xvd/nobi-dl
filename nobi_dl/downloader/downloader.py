@@ -1,7 +1,7 @@
-from .http import HttpDownloader
-from .hls import HlsDL
 from .common import BestFMT
 from .fmt_resolver import Resolve_FMTS
+from .hls import HlsDL
+from .http import HttpDownloader
 
 
 class Downloader:
@@ -17,7 +17,7 @@ class Downloader:
     def downloader(self):
         formats = self.info_dict.get("formats") or []
         bfmt = BestFMT(formats)()
-        bfmt = Resolve_FMTS(self.md, bfmt, None)()
+        bfmt = Resolve_FMTS(self.md, self.info_dict, bfmt, None)()
         url = bfmt.get("url")
         if "m3u8" in url:
             return HlsDL(bfmt, self.info_dict, self.options, self.logger)()

@@ -1,9 +1,9 @@
-import json
-import urllib.request
-import urllib.parse
-import urllib.error
-import socket
 import http.client
+import json
+import socket
+import urllib.error
+import urllib.parse
+import urllib.request
 
 
 class HttpResponse:
@@ -22,11 +22,11 @@ class HttpResponse:
 
     def json(self):
         return json.loads(self.text)
-    
+
     def iter_content(self, chunk_size=8192):
         if self._body:
             for i in range(0, len(self._body), chunk_size):
-                yield self._body[i:i + chunk_size]
+                yield self._body[i : i + chunk_size]
             return
 
         while True:
@@ -108,9 +108,7 @@ class UrllibRH:
         else:
             cookie_header = str(self.cookies)
 
-        return {
-            "Cookie": cookie_header
-        }
+        return {"Cookie": cookie_header}
 
     def _request(self):
         from ._request_handler import std_headers

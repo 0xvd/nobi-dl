@@ -1,21 +1,21 @@
 import itertools
 import re
+
+from nobi_dl import ExtractorBase
 from nobi_dl.utils import (
-    _search_regex,
-    _parse_a_tag,
-    _parse_a_tags,
-    fix_entries,
-    _parse_resolution,
-    _search_json,
     _og_thumbnail,
     _og_title,
+    _parse_a_tag,
+    _parse_a_tags,
+    _parse_resolution,
+    _search_json,
+    _search_regex,
     determine_ext,
     determine_filesize,
+    fix_entries,
     is_series,
     random_id,
-    check_both_host_are_same,
 )
-from nobi_dl import ExtractorBase
 
 
 class VegaMoviesME(ExtractorBase):
@@ -262,17 +262,7 @@ class VegaMoviesME(ExtractorBase):
             entries=new_entires, playlist_title=_og_title(webpage)
         )
 
-    def _url_fixer(self, url):
-        host = self.host_finder.vega_host()
-        check, new_url = check_both_host_are_same(url, host)
-        if not check:
-            return url
-        self.show_warning("Domain is changed changing url to new domain")
-        self.to_screen(f"Extracting from new url: {new_url}")
-        return new_url
-
     def _real_extract(self, url):
-        url = self._url_fixer(url)
         webpage = self._download_webpage(url)
         if is_series(url, webpage):
             return self._get_series(webpage)

@@ -1,7 +1,8 @@
-from ..networking import Request
-from ..utils import filename_from_title
 import os
 import time
+
+from ..networking import Request
+from ..utils import filename_from_title
 from .common import ProgressPrinter
 
 

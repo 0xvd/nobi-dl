@@ -1,4 +1,5 @@
 import sys
+
 from .utils import NobiDLError
 
 
@@ -48,10 +49,11 @@ class Log:
 
     def _ie(self) -> str:
         ie = self._ctx_ie
+        suffix = self.suffix
         if not ie:
-            return ""
+            return f"[{suffix}] " if suffix else ""
         name = getattr(ie, "_IE_NAME", None) or ie.__class__.__name__
-        if self.suffix is not None:
+        if suffix is not None:
             return f"[{name}][{self.suffix}] "
         return f"[{name}] "
 

@@ -1,10 +1,11 @@
 import re
-from .networking import Request
 import urllib.parse
+
+from .networking import Request
 from .utils import (
-    approx_filesize_from_tbr,
-    _parse_m3u8_resolution,
     _m3u8_attr,
+    _parse_m3u8_resolution,
+    approx_filesize_from_tbr,
     random_id,
 )
 

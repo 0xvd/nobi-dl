@@ -1,9 +1,10 @@
-from ..networking import Request
-from .common import ProgressPrinter
-from ..utils import filename_from_title
+import json
 import os
 import time
-import json
+
+from ..networking import Request
+from ..utils import filename_from_title
+from .common import ProgressPrinter
 
 
 class HlsDL:

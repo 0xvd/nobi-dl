@@ -1,8 +1,9 @@
 import json
-import time
 import tempfile
+import time
 from pathlib import Path
-from .utils import clean_url, _search_regex, b64d
+
+from .utils import _search_regex, b64d, clean_url
 
 CACHE_FILE = Path(tempfile.gettempdir()) / "movie_dl_cache.json"
 TTL_SECONDS = 24 * 60 * 60
@@ -25,11 +26,11 @@ class HOST_FINDER:
         self._download_json = extractor._download_json
 
     DEFAULT_HOSTS = {
-        "vega": "https://vegamovies.compare",
-        "hdhub": "https://new3.hdhub4u.fo",
-        "bollyflix": "https://bollyflix.do",
         "4khub": "https://4khdhub.dad",
+        "hdhub": "https://new3.hdhub4u.fo",
+        "bollyflix": "https://bollyflix.sarl",
         "moviesmod": "https://moviesmod.town",
+        "vega": "https://vegamovies13.com",
     }
 
     def _read_cache(self) -> dict:

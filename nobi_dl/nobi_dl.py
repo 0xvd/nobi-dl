@@ -1,20 +1,22 @@
-from .logger import Log
-from nobi_dl.options import options
-from .version import __version__
-import sys
+import json
 import platform
 import ssl
 import struct
-from .common import ExtractorBase
-from nobi_dl.format_render import render_formats_table
-import json
+import sys
 import time
+
+from nobi_dl.format_render import render_formats_table
+from nobi_dl.options import options
+
+from .common import ExtractorBase
 from .downloader import Downloader, Resolve_FMTS
+from .logger import Log
 from .search import Searcher
 from .utils import (
     NobiDLError,
     ascii_color,
 )
+from .version import __version__
 
 
 class NobiDL:
@@ -37,6 +39,7 @@ class NobiDL:
         self.list_extractors = self.opts.list_extractors
         self.force_extractor = self.opts.force_extractor
         self.searcher = Searcher(self, self.force_extractor)
+        self._ie = None
 
     def _real_initialize(self):
         if self.list_impersonate is True:
@@ -143,7 +146,7 @@ class NobiDL:
 
     def resolve_info_dict(self, info_dict_or_entry):
         formats = info_dict_or_entry.get("formats")
-        resolved_formats = Resolve_FMTS(self, None, formats)()
+        resolved_formats = Resolve_FMTS(self, info_dict_or_entry, None, formats)()
         info_dict_or_entry.pop("formats")
         return {**info_dict_or_entry, "formats": resolved_formats}
 
@@ -166,24 +169,32 @@ class NobiDL:
                 resolved_entry = self.resolve_info_dict(entry)
                 resolved_entries.append(resolved_entry)
                 self.write(json.dumps(resolved_entry))
+            if self.opts.dump_json:
+                playlist = {
+                    **info_dict,
+                    "entries": resolved_entries,
+                }
+                self.write(json.dumps(playlist))
+
+            elif self.opts.list_formats:
+                formats = entry.get("formats")
+                title = entry.get("title") or "Unkown title"
+                if not formats:
+                    pass
+                self.write(f"[info] Downloading {title}")
+                self.write(render_formats_table(formats, entry))
                 continue
 
             self.downloader(self, entry, self.opts, self.logger)()
 
-        if self.opts.dump_json:
-            playlist = {
-                **info_dict,
-                "entries": resolved_entries,
-            }
-            self.write(json.dumps(playlist))
-
-        return playlist if playlist else None
+        return None
 
     def gen_info_dict(self, info):
         info.setdefault("fulltitle", info.get("title"))
         info.setdefault("thumbnails", [])
         info.setdefault("series", bool(info.get("entries")))
         info.setdefault("formats", [])
+        info.setdefault("ie", self._ie)
 
         for f in info["formats"]:
             f.setdefault("protocol", "https")
@@ -243,9 +254,10 @@ class NobiDL:
             self.raise_error(f"Unsupported url: {url}")
             return
 
-        self.logger.set_ie(ie)
+        self._ie = ie
+        self.logger.set_ie(self._ie)
         self.to_screen(f"Extracting url: {url}")
-        info = ie.extract(url)
+        info = self._ie.extract(url)
         if not info or info is None:
             return self.show_warning(
                 "Extractor return nothing there is an error in Extractor."

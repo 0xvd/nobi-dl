@@ -1,26 +1,28 @@
-from ..host_finder import HOST_FINDER
-import itertools
-from html import unescape
-import re
 import ast
+import itertools
+import re
+from html import unescape
+
 from nobi_dl.common import ExtractorBase
 from nobi_dl.utils import (
-    _remove_duplicate,
-    _search_regex,
+    _og_thumbnail,
+    _og_title,
     _parse_a_tag,
     _parse_a_tags,
-    shifter,
-    b64d,
-    is_series,
-    _og_thumbnail,
-    _search_json,
     _parse_resolution,
-    _og_title,
-    determine_filesize,
+    _remove_duplicate,
+    _search_json,
+    _search_regex,
+    b64d,
     determine_ext,
-    random_id,
+    determine_filesize,
     fix_entries,
+    is_series,
+    random_id,
+    shifter,
 )
+
+from ..host_finder import HOST_FINDER
 
 
 class Hdhub4uME(ExtractorBase):

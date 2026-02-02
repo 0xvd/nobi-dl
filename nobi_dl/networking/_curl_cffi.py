@@ -1,8 +1,9 @@
-import curl_cffi
-from curl_cffi import requests, const
-from curl_cffi import exceptions as req_exc
-from curl_cffi.requests.impersonate import BrowserTypeLiteral, DEFAULT_CHROME
 from typing import get_args
+
+import curl_cffi
+from curl_cffi import const, requests
+from curl_cffi import exceptions as req_exc
+from curl_cffi.requests.impersonate import DEFAULT_CHROME, BrowserTypeLiteral
 
 SESSION = requests.Session()
 DEFAULT_TIMEOUT = 20

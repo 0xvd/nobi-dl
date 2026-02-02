@@ -1,28 +1,30 @@
-from nobi_dl import ExtractorBase
 import itertools
 import re
+from urllib.parse import quote_plus
+
+from nobi_dl import ExtractorBase
 from nobi_dl.utils import (
-    _search_regex,
-    clean_url,
-    b64d,
+    _og_thumbnail,
+    _og_title,
     _parse_a_tag,
     _parse_a_tags,
-    _og_title,
-    is_series,
     _parse_resolution,
-    _get_qparam,
+    _search_regex,
     determine_ext,
-    _og_thumbnail,
     determine_filesize,
+    fix_entries,
+    is_series,
+    random_id,
 )
+
+from ..downloader.fmt_resolver import Resolve_FMTS
 from .hdhub import Hdhub4uME
-from urllib.parse import quote_plus
 
 
 class BollyFlixME(ExtractorBase):
     _IE_NAME = "Bollyflix"
     _VALID_URL = r"^https?://.*bollyflix\..+"
-    _SEARCH = False
+    _SEARCH = True
 
     @property
     def HOST(self):
@@ -31,6 +33,10 @@ class BollyFlixME(ExtractorBase):
     @property
     def hdhub4u(self):
         return Hdhub4uME(self.md)
+
+    @property
+    def bolly_url_decoder(self):
+        return Resolve_FMTS(self.md, None, None, None).bolly_url_decoder
 
     def _parse_content(self, html):
         results = []
@@ -68,108 +74,116 @@ class BollyFlixME(ExtractorBase):
                 break
         return results
 
-    def _parse_formats(self, link, format_id=None):
-        qualties = []
-        webpage = self._download_webpage(link)
-        title = _og_title(webpage)
-        for atag in _parse_a_tags(webpage):
-            href, name = _parse_a_tag(atag)
-            format_id = (name or "").lower()
-            if not any(
-                k in format_id
-                for k in ("instant", "fast cloud", "zipdisk", "pixel", "gofile")
-            ):
-                continue
-            if "pixel" in format_id:
-                qualties.extend(self.hdhub4u._parse_pixel(href, title))
-            elif "instant" in format_id:
-                req = self._request(href, method="HEAD")
-                google_url = _get_qparam(req.url, "url")
-                headers = self._request(google_url, method="HEAD").headers
-                cd = headers.get("Content-Disposition", "")
-                filename = _search_regex(r'filename\s*=\s*"([^"]+)"', cd)
-                qualties.append(
-                    {
-                        "url": google_url,
-                        "format_id": title or "instant dl",
-                        **_parse_resolution(filename),
-                        "ext": determine_ext(google_url),
-                        "acodec": True,
-                        "vcodec": False,
-                        **determine_filesize(headers),
-                    }
-                )
-            elif "zipdisk" in format_id:
-                continue
-
-        return qualties
-
-    def bolly_url_decoder_resolver(self, url):
-        webpage = self._download_webpage(url)
-        out = []
-        for p1, p2 in re.findall(
-            r"""(?:'(?P<p1>[^']*)'\s*\+\s*)+'(?P<p2>[^']*)'?""", webpage
-        ):
-            parts = p1 + p2
-            if "tech-news" in parts:
-                out.append("https://box.tech-news.app")
-            elif ".com" in parts:
-                parts = f"https://{parts}" if "https" not in parts else parts
-                out.append(parts)
-        if not out:
-            return None
-        for domain in out:
-            try:
-                if self._ping_host(domain) == 200:
-                    return domain
-            except Exception:
-                pass
-        return out[0]
-
-    def bolly_url_decoder(self, url):
-        domain = self.bolly_url_decoder_resolver(url)
-        if domain is None:
-            webpage = self._download_webpage(url)
-        token = _search_regex(r"\bid\s*=([^/?&#]+)", url)
-        webpage = self._download_webpage(
-            f"{domain}/?id={token}", headers={"referer": clean_url(url)}
-        )
-        e_token = _search_regex(r'\blink\s*?"\s*:\s*"([^"]+)', webpage)
-        if not e_token:
-            return None
-        return b64d(e_token)
-
     def get_movie(self, url_or_webpage):
         formats = []
         if "<html" in url_or_webpage:
             webpage = url_or_webpage
         else:
             webpage = self._download_webpage(url_or_webpage)
-        atags = _parse_a_tags(webpage)
-        for atag in atags:
-            href, name = _parse_a_tag(atag)
-            format_id = (name or "").lower()
-            if not any(
-                k in format_id
-                for k in ("google drive", "drive", "download links", "links")
-            ):
+        for h5 in re.findall(r"<h5[\s\S]+?<\/h5>[\s\S]+?<a[\s\S]+?<\/a>", webpage):
+            if "<a" not in h5:
                 continue
-            link = self.bolly_url_decoder(href) if "?id=" in href else href
-            formats.extend(self._parse_formats(link))
-        language = _search_regex(r'\bLanguage[^"]+?[^>]+>(.[^<]+)<', webpage)
-        title = _search_regex(r'\bheadline\s*"\s*:\s*"([^"]+)"', webpage, default="")
-        if not title:
-            title = _og_title(webpage)
+            for atag in _parse_a_tags(h5):
+                href, name = _parse_a_tag(atag)
+                label = (name or "").lower()
+                if not any(
+                    k in label for k in ("google drive", "le drive", "ogle drive")
+                ):
+                    continue
+                formats.append(
+                    {
+                        "format_id": random_id(),
+                        "url": href,
+                        "acodec": True,
+                        "vcodec": True,
+                        "ext": determine_ext(href, href),
+                        **determine_filesize(h5),
+                        **_parse_resolution(h5),
+                    }
+                )
+
         return {
-            "title": title,
+            "title": _og_title(webpage),
             "thumbnail": _og_thumbnail(webpage),
-            "language": language,
             "formats": formats,
         }
+
+    def block_parser(self, webpage, h4, url):
+        entries = []
+
+        fmt_url = self.bolly_url_decoder(url) if "?id=" in url else url
+        fmt_webpage = self._download_webpage(fmt_url)
+        for atag in _parse_a_tags(fmt_webpage):
+            href, name = _parse_a_tag(atag)
+            if not name:
+                continue
+            if not any(k in name.lower() for k in ("episode", "epis")):
+                continue
+            ep_no = _search_regex(
+                r"(?is)(?:episode|ep0|ep)\s*(\d+)", name, default=None
+            )
+            season = _search_regex(r"(?is)(?:season|s|s0)\s*(\d+)", h4, default=None)
+            entries.append(
+                {
+                    "title": f"{_og_title(webpage)} - Season {season} - Episode {ep_no}",
+                    "season": season,
+                    "episode": ep_no,
+                    "formats": [
+                        {
+                            "url": href,
+                            "format_id": random_id(),
+                            "acodec": True,
+                            "vcodec": False,
+                            "ext": determine_ext(href, href),
+                            **determine_filesize(h4),
+                            **_parse_resolution(h4),
+                        }
+                    ],
+                }
+            )
+
+        return entries
+
+    def series_formats(self, webpage):
+        entries = []
+        for h4 in re.findall(r"<h4[\s\S]+?<\/h4>\s*<p[\s\S]+?<\/p>", webpage):
+            if "<a" not in h4:
+                continue
+            for atag in _parse_a_tags(h4):
+                href, name = _parse_a_tag(atag)
+                if not any(
+                    k in name.lower()
+                    for k in (
+                        "download links",
+                        "download link",
+                        "load links",
+                        "load link",
+                    )
+                ):
+                    continue
+                if href is None:
+                    continue
+                entries.extend(self.block_parser(webpage, h4, href))
+
+        return entries
+
+    def _get_series(self, url_or_webpage, url):
+        if "<html" in url_or_webpage:
+            webpage = url_or_webpage
+        else:
+            webpage = self._download_webpage(url_or_webpage)
+
+        entries = fix_entries(self, self.series_formats(webpage))
+
+        return self.playlist_result(
+            entries=entries,
+            url=url,
+            playlist_title=_og_title(webpage),
+        )
 
     def _real_extract(self, url):
         webpage = self._download_webpage(url)
         if is_series(url, webpage):
-            pass  # current not working date January 31 2026 #TODO Fix when start working as normal
+            return self._get_series(webpage, url)
         else:
-            return self.get_movie(webpage, url)
+            return self.get_movie(webpage)

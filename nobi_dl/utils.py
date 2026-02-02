@@ -1,12 +1,13 @@
 import base64
+import difflib
 import json
 import os
+import random
 import re
 import sys
 import urllib.parse
 from html import unescape
-import difflib
-import random
+
 from .version import REPOSITORY
 
 try:

@@ -49,7 +49,6 @@ _COLORS = {
     "WHITE": "7",
 }
 
-
 _TEXT_STYLES = {
     "NORMAL": "0",
     "BOLD": "1",
@@ -144,7 +143,7 @@ def shorten_protocol_name(fmt: dict) -> str:
     url = fmt.get("url")
     p = "https" if "m3u8" not in url else "m3u8"
     return {
-        "https": "https",
+        "https": "http",
         "m3u8": "m3u8",
     }.get(p, p)
 

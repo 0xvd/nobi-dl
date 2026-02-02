@@ -1,8 +1,9 @@
+import sys
+import time
+
 from ..utils import (
     NobiDLError,
 )
-import time
-import sys
 
 
 class BestFMT:

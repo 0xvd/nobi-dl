@@ -1,6 +1,7 @@
-from ._urllib import UrllibRH
-from ..utils import NobiDLError
 import random
+
+from ..utils import NobiDLError
+from ._urllib import UrllibRH
 
 
 def random_user_agent():

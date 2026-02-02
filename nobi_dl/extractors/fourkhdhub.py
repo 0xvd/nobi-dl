@@ -1,19 +1,21 @@
 import re
+
+from nobi_dl import ExtractorBase
 from nobi_dl.utils import (
-    _search_regex,
-    _parse_a_tag,
-    _parse_a_tags,
     _og_thumbnail,
     _og_title,
-    fix_entries,
-    is_series,
+    _parse_a_tag,
+    _parse_a_tags,
+    _parse_resolution,
+    _search_regex,
     determine_ext,
     determine_filesize,
-    _parse_resolution,
+    fix_entries,
+    is_series,
     random_id,
 )
+
 from .hdhub import Hdhub4uME
-from nobi_dl import ExtractorBase
 
 
 class FourkhdhubME(ExtractorBase):

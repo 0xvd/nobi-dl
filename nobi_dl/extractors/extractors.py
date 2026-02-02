@@ -1,7 +1,7 @@
 from .bollyflix import BollyFlixME
-from .hdhub import Hdhub4uME
-from .vegamovies import VegaMoviesME
 from .fourkhdhub import FourkhdhubME
+from .hdhub import Hdhub4uME
 from .moviesmod import MoviesModME
+from .vegamovies import VegaMoviesME
 
 ALL = [BollyFlixME, Hdhub4uME, VegaMoviesME, FourkhdhubME, MoviesModME]
